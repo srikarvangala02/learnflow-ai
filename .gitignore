@@ -217,3 +217,16 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 .superpowers/
+
+# JS/Node
+node_modules/
+dist/
+
+# Remotion render output
+render/out/
+
+# Backend uploads and generated media
+backend/uploads/
+*.mp4
+*.mp3
+*.wav

@@ -1,2 +1,72 @@
 # learnflow-ai
-AI pipeline that turns source learning material (PDFs, papers, notes) into short explainer videos with auto-generated comprehension quizzes and an automated accuracy eval.
+
+Turn any PDF into a short explainer video with an auto-generated comprehension quiz, then automatically benchmark how well the narration alone captures the source material.
+
+## Architecture
+
+```text
+PDF → FastAPI → Claude API → ElevenLabs TTS → Remotion → video + quiz → eval
+```
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Backend | Python / FastAPI |
+| PDF parsing | pdfplumber |
+| Script generation | Claude API (Anthropic) |
+| TTS | ElevenLabs |
+| Video rendering | Remotion (React / TypeScript) |
+| Frontend | Vite + React + TypeScript |
+| Eval | Python (custom script) |
+
+## MVP Scope
+
+**v1 includes:**
+
+- PDF input only
+- Programmatic slide layouts (no AI-generated images)
+- Single TTS voice (ElevenLabs)
+- Static slides with crossfades (no animation)
+- 3–5 question multiple-choice quiz
+
+**Out of scope for v1:**
+
+- Multiple input formats
+- Animated diagrams
+- Multi-language support
+- Voice selection UI
+- User accounts
+
+## Setup
+
+### Backend
+
+```bash
+cd backend
+pip install -r requirements.txt
+uvicorn main:app --reload
+```
+
+### Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+### Render
+
+```bash
+cd render
+npm install
+npx remotion studio src/index.ts
+```
+
+### Eval
+
+```bash
+cd eval
+python eval.py
+```

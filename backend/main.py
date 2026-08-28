@@ -1,6 +1,6 @@
 # Pre-staged for the commented render/upload stubs below — not used by active routes.
-import subprocess
-import uuid
+import subprocess  # noqa: F401
+import uuid  # noqa: F401
 
 from fastapi import BackgroundTasks, FastAPI
 

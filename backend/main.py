@@ -1,3 +1,4 @@
+# Pre-staged for the commented render/upload stubs below — not used by active routes.
 import subprocess
 import uuid
 

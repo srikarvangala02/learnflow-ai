@@ -1,33 +1,26 @@
-import { Composition } from 'remotion'
+import { Composition, CalculateMetadataFunction } from 'remotion'
+import { LearnFlowVideo, VideoProps, FRAMES_PER_SLIDE } from './LearnFlowVideo'
 
-function LearnFlowSlide() {
-  return (
-    <div
-      style={{
-        background: '#1a1a2e',
-        width: '100%',
-        height: '100%',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      <h1 style={{ color: '#ffffff', fontFamily: 'sans-serif' }}>
-        Slide Title
-      </h1>
-    </div>
-  )
+const calculateMetadata: CalculateMetadataFunction<VideoProps> = ({ props }) => ({
+  durationInFrames: Math.max(props.slides.length, 1) * FRAMES_PER_SLIDE,
+})
+
+const defaultProps: VideoProps = {
+  title: 'Untitled',
+  slides: [{ index: 0, title: 'Slide', narration: '', bullets: [''] }],
 }
 
 export function Root() {
   return (
     <Composition
-      id="LearnFlowSlide"
-      component={LearnFlowSlide}
+      id="LearnFlowVideo"
+      component={LearnFlowVideo}
+      calculateMetadata={calculateMetadata}
       durationInFrames={150}
       fps={30}
       width={1920}
       height={1080}
+      defaultProps={defaultProps}
     />
   )
 }

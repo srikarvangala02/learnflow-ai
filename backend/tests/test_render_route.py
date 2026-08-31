@@ -153,3 +153,15 @@ def test_video_download_missing_file_returns_404(tmp_path, monkeypatch):
     }
     response = client.get("/render/done-render-no-file/video")
     assert response.status_code == 404
+
+
+def test_video_download_with_generate_job_id_returns_400(tmp_path, monkeypatch):
+    monkeypatch.setattr(main, "UPLOADS_DIR", tmp_path)
+    # Simulate a generate job result (script dict, no video_path key)
+    jobs["gen-job"] = {
+        "status": "complete",
+        "result": {"file_id": "abc", "title": "T", "slides": []},
+        "error": None,
+    }
+    response = client.get("/render/gen-job/video")
+    assert response.status_code == 400

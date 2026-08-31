@@ -93,7 +93,10 @@ def render_video(render_job_id: str):
             status_code=400,
             detail=f"Render job {render_job_id!r} is not complete (status: {job['status']!r})",
         )
-    video_path = pathlib.Path(job["result"]["video_path"])
+    video_path_str = job["result"].get("video_path") if job["result"] else None
+    if not video_path_str:
+        raise HTTPException(status_code=400, detail=f"Job {render_job_id!r} is not a render job")
+    video_path = pathlib.Path(video_path_str)
     if not video_path.exists():
         raise HTTPException(status_code=404, detail="Video file not found on disk")
     return FileResponse(str(video_path), media_type="video/mp4")

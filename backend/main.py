@@ -1,5 +1,6 @@
 import json
 import pathlib
+import subprocess
 import uuid
 
 from fastapi import BackgroundTasks, FastAPI, File, HTTPException, UploadFile
@@ -62,3 +63,55 @@ def job_status(job_id: str) -> dict:
         raise HTTPException(status_code=404, detail=f"No job with id {job_id!r}")
     job = jobs[job_id]
     return {"job_id": job_id, **job}
+
+
+@app.post("/render/{job_id}")
+def render(job_id: str, background_tasks: BackgroundTasks) -> dict:
+    if job_id not in jobs:
+        raise HTTPException(status_code=404, detail=f"No job with id {job_id!r}")
+    job = jobs[job_id]
+    if job["status"] != "complete":
+        raise HTTPException(
+            status_code=400,
+            detail=f"Generate job {job_id!r} is not complete (status: {job['status']!r})",
+        )
+    script = job["result"]
+    render_job_id = str(uuid.uuid4())
+    jobs[render_job_id] = {"status": "pending", "result": None, "error": None}
+    background_tasks.add_task(_run_remotion_render, render_job_id, script)
+    return {"job_id": render_job_id}
+
+
+def _run_remotion_render(render_job_id: str, script: dict) -> None:
+    jobs[render_job_id]["status"] = "running"
+    try:
+        file_id = script["file_id"]
+        props_path = (UPLOADS_DIR / f"{file_id}_script.json").resolve()
+        out_path = (pathlib.Path("render") / "out" / f"{render_job_id}.mp4").resolve()
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        result = subprocess.run(
+            [
+                "npx", "remotion", "render",
+                "src/index.ts",
+                "LearnFlowVideo",
+                str(out_path),
+                "--props", str(props_path),
+            ],
+            cwd=str(pathlib.Path("render").resolve()),
+            capture_output=True,
+            check=False,
+        )
+        if result.returncode == 0:
+            jobs[render_job_id] = {
+                "status": "complete",
+                "result": {"video_path": str(out_path)},
+                "error": None,
+            }
+        else:
+            jobs[render_job_id] = {
+                "status": "error",
+                "result": None,
+                "error": result.stderr.decode(),
+            }
+    except Exception as exc:
+        jobs[render_job_id] = {"status": "error", "result": None, "error": str(exc)}

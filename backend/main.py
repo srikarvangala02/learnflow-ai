@@ -1,6 +1,7 @@
 import json
 import pathlib
 import subprocess
+import sys
 import uuid
 
 from fastapi import BackgroundTasks, FastAPI, File, HTTPException, UploadFile
@@ -109,9 +110,10 @@ def _run_remotion_render(render_job_id: str, script: dict) -> None:
         props_path = (UPLOADS_DIR / f"{file_id}_script.json").resolve()
         out_path = (pathlib.Path("render") / "out" / f"{render_job_id}.mp4").resolve()
         out_path.parent.mkdir(parents=True, exist_ok=True)
+        npx = "npx.cmd" if sys.platform == "win32" else "npx"
         result = subprocess.run(
             [
-                "npx", "remotion", "render",
+                npx, "remotion", "render",
                 "src/index.ts",
                 "LearnFlowVideo",
                 str(out_path),

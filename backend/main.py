@@ -4,6 +4,7 @@ import subprocess
 import uuid
 
 from fastapi import BackgroundTasks, FastAPI, File, HTTPException, UploadFile
+from fastapi.responses import FileResponse
 
 from script_generator import extract_text, generate_script
 
@@ -82,6 +83,22 @@ def render(job_id: str, background_tasks: BackgroundTasks) -> dict:
     return {"job_id": render_job_id}
 
 
+@app.get("/render/{render_job_id}/video")
+def render_video(render_job_id: str):
+    if render_job_id not in jobs:
+        raise HTTPException(status_code=404, detail=f"No render job with id {render_job_id!r}")
+    job = jobs[render_job_id]
+    if job["status"] != "complete":
+        raise HTTPException(
+            status_code=400,
+            detail=f"Render job {render_job_id!r} is not complete (status: {job['status']!r})",
+        )
+    video_path = pathlib.Path(job["result"]["video_path"])
+    if not video_path.exists():
+        raise HTTPException(status_code=404, detail="Video file not found on disk")
+    return FileResponse(str(video_path), media_type="video/mp4")
+
+
 def _run_remotion_render(render_job_id: str, script: dict) -> None:
     jobs[render_job_id]["status"] = "running"
     try:
@@ -111,7 +128,7 @@ def _run_remotion_render(render_job_id: str, script: dict) -> None:
             jobs[render_job_id] = {
                 "status": "error",
                 "result": None,
-                "error": result.stderr.decode(),
+                "error": result.stderr.decode("utf-8", errors="replace"),
             }
     except Exception as exc:
         jobs[render_job_id] = {"status": "error", "result": None, "error": str(exc)}

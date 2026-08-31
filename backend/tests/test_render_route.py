@@ -113,3 +113,43 @@ def test_failed_render_sets_job_error(tmp_path, monkeypatch):
     assert body["status"] == "error"
     assert "npx" in body["error"]
     assert body["result"] is None
+
+
+# ── GET /render/{render_job_id}/video ────────────────────────────────────────
+
+def test_video_download_unknown_render_job_returns_404():
+    response = client.get("/render/nonexistent-render-job/video")
+    assert response.status_code == 404
+
+
+def test_video_download_incomplete_render_job_returns_400(tmp_path, monkeypatch):
+    monkeypatch.setattr(main, "UPLOADS_DIR", tmp_path)
+    jobs["running-render"] = {"status": "running", "result": None, "error": None}
+    response = client.get("/render/running-render/video")
+    assert response.status_code == 400
+
+
+def test_video_download_complete_job_returns_mp4(tmp_path, monkeypatch):
+    monkeypatch.setattr(main, "UPLOADS_DIR", tmp_path)
+    # Create a fake mp4 file on disk
+    video_file = tmp_path / "fake.mp4"
+    video_file.write_bytes(b"fake mp4 content")
+    jobs["done-render"] = {
+        "status": "complete",
+        "result": {"video_path": str(video_file)},
+        "error": None,
+    }
+    response = client.get("/render/done-render/video")
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("video/mp4")
+
+
+def test_video_download_missing_file_returns_404(tmp_path, monkeypatch):
+    monkeypatch.setattr(main, "UPLOADS_DIR", tmp_path)
+    jobs["done-render-no-file"] = {
+        "status": "complete",
+        "result": {"video_path": str(tmp_path / "nonexistent.mp4")},
+        "error": None,
+    }
+    response = client.get("/render/done-render-no-file/video")
+    assert response.status_code == 404

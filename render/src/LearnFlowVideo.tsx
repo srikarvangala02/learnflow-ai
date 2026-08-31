@@ -19,5 +19,6 @@ export function LearnFlowVideo({ slides }: VideoProps) {
   const frame = useCurrentFrame()
   const slideIndex = Math.min(Math.floor(frame / FRAMES_PER_SLIDE), slides.length - 1)
   const slide = slides[slideIndex]
+  if (!slide) return null
   return <Slide slide={slide} />
 }

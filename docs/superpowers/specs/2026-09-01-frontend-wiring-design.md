@@ -76,7 +76,7 @@ Transitions are pure: each child component calls a single `onComplete(payload)` 
 
 ## 6. API Layer (`lib/api.ts`)
 
-All functions use `fetch` against `http://localhost:8000`. No external HTTP library.
+All functions use `fetch` against the base URL resolved from `import.meta.env.VITE_API_BASE_URL`, falling back to `http://localhost:8000`. No external HTTP library. A `.env.example` file documents the variable.
 
 ```ts
 const BASE = 'http://localhost:8000'
@@ -131,13 +131,27 @@ All functions throw on non-2xx responses.
 
 ### 7a. `UploadStep`
 
-Props: `onComplete(fileId: string, jobId: string): void`
+Props: `onComplete(fileId: string, jobId: string, questions: Question[]): void`
 
 - Centered layout, max-width `480px`.
 - react-dropzone accepts `application/pdf` only; rejects other types with an inline error message.
-- Drop zone: dashed `border-2 border-border` rounded-xl, 200px tall, with an upload icon (lucide-react `UploadCloud`), primary text "Drop your PDF here", secondary text "or click to browse".
-- On drop: disable the drop zone, show a loading spinner inside it while calling `uploadPdf` then `startGenerate` sequentially. On success, calls `onComplete(fileId, jobId)`.
+- Drop zone: dashed `border-2 border-border` rounded-xl, 200px tall, with an upload icon (SVG inline or lucide-react), primary text "Drop your PDF here", secondary text "or click to browse".
+- On drop: disable the drop zone, show a loading spinner inside it while calling `uploadPdf` then `startGenerate` then `getQuiz` sequentially. On success, call `onComplete` with fileId, jobId, and questions.
 - Error state: red border + inline message, re-enables drop zone.
+- The quiz is fetched here (before the generating step completes) so that the quiz is ready immediately after polling finishes.
+
+Wait — actually the quiz requires the generate job to complete first. So the sequence is:
+1. uploadPdf → file_id
+2. startGenerate(file_id) → job_id
+3. **Hand off to ProcessingStep** with job_id
+4. ProcessingStep polls until complete, then calls getQuiz, then advances to QuizStep
+
+So `UploadStep` only calls `uploadPdf` + `startGenerate`, then calls `onComplete(fileId, jobId)`.
+
+**Corrected flow:**
+
+`UploadStep` props: `onComplete(fileId: string, jobId: string): void`
+- Calls `uploadPdf` then `startGenerate`, then calls onComplete.
 
 ### 7b. `ProcessingStep`
 

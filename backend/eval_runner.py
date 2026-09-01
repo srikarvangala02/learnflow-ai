@@ -33,7 +33,11 @@ def _answer(client: anthropic.Anthropic, context: str, question: dict) -> str:
         system=_SYSTEM_PROMPT,
         messages=[{"role": "user", "content": prompt}],
     )
-    return response.content[0].text.strip().upper()[:1]
+    text = response.content[0].text.strip().upper()
+    for ch in text:
+        if ch in "ABCD":
+            return ch
+    return "?"
 
 
 def evaluate_quiz(script: dict, pdf_text: str, questions: list[dict]) -> dict:

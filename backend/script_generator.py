@@ -34,7 +34,10 @@ Rules:
 - Generate between 3 and 5 questions.
 - Each question must have exactly 4 options labelled A through D.
 - Only one option is correct; set "answer" to its letter.
-- Questions must test understanding, not surface recall of exact wording.
+- Questions MUST require applying or reasoning about concepts — not recognising a definition or finding a sentence from the text. A student who memorised the slides word-for-word but does not understand the material should get these wrong.
+- Each question should probe a different concept so the set gives broad coverage of the material.
+- Wrong options must be plausible — a student who partially understands the topic should find them credible. Never use obviously absurd distractors.
+- Prefer questions that ask "why", "what would happen if", "which scenario illustrates", or "how does X relate to Y" over "what is the definition of X".
 - Return only the JSON object. No markdown, no explanation.\
 """
 

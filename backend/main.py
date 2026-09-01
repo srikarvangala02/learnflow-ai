@@ -5,6 +5,7 @@ import sys
 import uuid
 
 from fastapi import BackgroundTasks, FastAPI, File, HTTPException, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
@@ -12,6 +13,13 @@ from eval_runner import evaluate_quiz
 from script_generator import extract_text, generate_script, generate_quiz
 
 app = FastAPI(title="learnflow-ai")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 _BACKEND_DIR = pathlib.Path(__file__).parent
 UPLOADS_DIR = _BACKEND_DIR / "uploads"

@@ -6,7 +6,9 @@ import uuid
 
 from fastapi import BackgroundTasks, FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
+from pydantic import BaseModel
 
+from eval_runner import evaluate_quiz
 from script_generator import extract_text, generate_script, generate_quiz
 
 app = FastAPI(title="learnflow-ai")
@@ -103,6 +105,28 @@ def render_video(render_job_id: str):
     if not video_path.exists():
         raise HTTPException(status_code=404, detail="Video file not found on disk")
     return FileResponse(str(video_path), media_type="video/mp4")
+
+
+class EvalRequest(BaseModel):
+    job_id: str
+    questions: list[dict]
+
+
+@app.post("/eval")
+def eval_quiz(body: EvalRequest) -> dict:
+    if body.job_id not in jobs:
+        raise HTTPException(status_code=404, detail=f"No job with id {body.job_id!r}")
+    job = jobs[body.job_id]
+    if job["status"] != "complete":
+        raise HTTPException(
+            status_code=400,
+            detail=f"Generate job {body.job_id!r} is not complete (status: {job['status']!r})",
+        )
+    script = job["result"]
+    pdf_path = UPLOADS_DIR / f"{script['file_id']}.pdf"
+    pdf_text = extract_text(pdf_path)
+    result = evaluate_quiz(script, pdf_text, body.questions)
+    return {"job_id": body.job_id, **result}
 
 
 @app.get("/quiz/{job_id}")

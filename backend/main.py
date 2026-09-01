@@ -7,11 +7,13 @@ import uuid
 from fastapi import BackgroundTasks, FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 
-from script_generator import extract_text, generate_script
+from script_generator import extract_text, generate_script, generate_quiz
 
 app = FastAPI(title="learnflow-ai")
 
-UPLOADS_DIR = pathlib.Path("uploads")
+_BACKEND_DIR = pathlib.Path(__file__).parent
+UPLOADS_DIR = _BACKEND_DIR / "uploads"
+_RENDER_DIR = _BACKEND_DIR.parent / "render"
 
 # In-memory job store. Keys are job_id strings.
 # Each value: {"status": str, "result": dict | None, "error": str | None}
@@ -103,23 +105,48 @@ def render_video(render_job_id: str):
     return FileResponse(str(video_path), media_type="video/mp4")
 
 
+@app.get("/quiz/{job_id}")
+def quiz(job_id: str) -> dict:
+    if job_id not in jobs:
+        raise HTTPException(status_code=404, detail=f"No job with id {job_id!r}")
+    job = jobs[job_id]
+    if job["status"] != "complete":
+        raise HTTPException(
+            status_code=400,
+            detail=f"Generate job {job_id!r} is not complete (status: {job['status']!r})",
+        )
+    script = job["result"]
+    result = generate_quiz(script)
+    return {"job_id": job_id, **result}
+
+
 def _run_remotion_render(render_job_id: str, script: dict) -> None:
     jobs[render_job_id]["status"] = "running"
     try:
         file_id = script["file_id"]
         props_path = (UPLOADS_DIR / f"{file_id}_script.json").resolve()
-        out_path = (pathlib.Path("render") / "out" / f"{render_job_id}.mp4").resolve()
+        out_path = (_RENDER_DIR / "out" / f"{render_job_id}.mp4").resolve()
         out_path.parent.mkdir(parents=True, exist_ok=True)
         npx = "npx.cmd" if sys.platform == "win32" else "npx"
+        cmd = [
+            npx, "remotion", "render",
+            "src/index.ts",
+            "LearnFlowVideo",
+            str(out_path),
+            "--props", str(props_path),
+        ]
+        if sys.platform == "win32":
+            for candidate in [
+                r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
+                r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+                r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+            ]:
+                if pathlib.Path(candidate).exists():
+                    cmd += ["--browser-executable", candidate]
+                    break
         result = subprocess.run(
-            [
-                npx, "remotion", "render",
-                "src/index.ts",
-                "LearnFlowVideo",
-                str(out_path),
-                "--props", str(props_path),
-            ],
-            cwd=str(pathlib.Path("render").resolve()),
+            cmd,
+            cwd=str(_RENDER_DIR),
             capture_output=True,
             check=False,
         )

@@ -10,6 +10,34 @@ _SYSTEM_PROMPT = (
     "Your output must be valid JSON and nothing else — no markdown fences, no commentary."
 )
 
+_QUIZ_SYSTEM_PROMPT = (
+    "You are an expert educator writing multiple-choice quiz questions to test comprehension. "
+    "Your output must be valid JSON and nothing else — no markdown fences, no commentary."
+)
+
+_QUIZ_USER_TEMPLATE = """\
+Source material:
+{text}
+
+Produce a JSON object with this exact schema:
+{{
+  "questions": [
+    {{
+      "question": "<question text>",
+      "options": ["A. <option>", "B. <option>", "C. <option>", "D. <option>"],
+      "answer": "<A, B, C, or D>"
+    }}
+  ]
+}}
+
+Rules:
+- Generate between 3 and 5 questions.
+- Each question must have exactly 4 options labelled A through D.
+- Only one option is correct; set "answer" to its letter.
+- Questions must test understanding, not surface recall of exact wording.
+- Return only the JSON object. No markdown, no explanation.\
+"""
+
 _USER_TEMPLATE = """\
 Source text:
 {text}
@@ -72,3 +100,34 @@ def generate_script(file_id: str, text: str) -> dict:
 
     script["file_id"] = file_id
     return script
+
+
+def generate_quiz(script: dict) -> dict:
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    if not api_key:
+        raise ValueError("ANTHROPIC_API_KEY environment variable is not set")
+
+    client = anthropic.Anthropic(api_key=api_key)
+    text = "\n\n".join(slide["narration"] for slide in script.get("slides", []))
+
+    def _call(messages: list) -> str:
+        response = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=2048,
+            system=_QUIZ_SYSTEM_PROMPT,
+            messages=messages,
+        )
+        return response.content[0].text.strip()
+
+    user_msg = {"role": "user", "content": _QUIZ_USER_TEMPLATE.format(text=text)}
+    raw = _call([user_msg])
+
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        raw2 = _call([
+            user_msg,
+            {"role": "assistant", "content": raw},
+            {"role": "user", "content": "That was not valid JSON. Return only the JSON object, nothing else."},
+        ])
+        return json.loads(raw2)

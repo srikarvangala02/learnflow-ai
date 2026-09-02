@@ -6,7 +6,7 @@ import { QuizStep } from './components/QuizStep'
 import { ResultsStep } from './components/ResultsStep'
 
 type AppState =
-  | { step: 'upload' }
+  | { step: 'upload'; error?: string }
   | { step: 'generating'; jobId: string }
   | { step: 'quiz'; jobId: string; questions: Question[] }
   | { step: 'results'; questions: Question[]; userAnswers: string[]; evalResult: EvalResult }
@@ -22,9 +22,14 @@ export default function App() {
       </header>
 
       {state.step === 'upload' && (
-        <UploadStep
-          onComplete={(jobId) => setState({ step: 'generating', jobId })}
-        />
+        <>
+          <UploadStep
+            onComplete={(jobId) => setState({ step: 'generating', jobId })}
+          />
+          {state.error && (
+            <p className="mt-4 text-sm text-error text-center max-w-md">{state.error}</p>
+          )}
+        </>
       )}
 
       {state.step === 'generating' && (
@@ -33,7 +38,7 @@ export default function App() {
           onComplete={(questions) =>
             setState({ step: 'quiz', jobId: state.jobId, questions })
           }
-          onError={() => setState({ step: 'upload' })}
+          onError={(message) => setState({ step: 'upload', error: message })}
         />
       )}
 

@@ -13,6 +13,12 @@ export type Question = {
   question: string
   options: string[]  // e.g. ["A. Set of outcomes", "B. A probability", ...]
   answer: string     // "A" | "B" | "C" | "D"
+  topic?: string     // 2-4 word concept label, e.g. "Bernoulli Expectation"
+}
+
+export type FocusArea = {
+  topic: string
+  explanation: string
 }
 
 export type Job = {
@@ -42,6 +48,7 @@ export type EvalResult = {
   full_source_score: number
   total_questions: number
   questions: EvalQuestionResult[]
+  focus_areas?: FocusArea[]
 }
 
 export function uploadPdf(file: File): Promise<{ file_id: string }> {
@@ -62,10 +69,10 @@ export function getQuiz(jobId: string): Promise<QuizResponse> {
   return request(`/quiz/${jobId}`)
 }
 
-export function runEval(jobId: string, questions: Question[]): Promise<EvalResult> {
+export function runEval(jobId: string, questions: Question[], userAnswers: string[]): Promise<EvalResult> {
   return request('/eval', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ job_id: jobId, questions }),
+    body: JSON.stringify({ job_id: jobId, questions, user_answers: userAnswers }),
   })
 }

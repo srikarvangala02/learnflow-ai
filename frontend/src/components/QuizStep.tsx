@@ -31,7 +31,7 @@ export function QuizStep({ jobId, questions, onComplete }: Props) {
       setSubmitting(true)
       setError(null)
       try {
-        const evalResult = await runEval(jobId, questions)
+        const evalResult = await runEval(jobId, questions, nextAnswers)
         onComplete(nextAnswers, evalResult)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Evaluation failed. Please try again.')

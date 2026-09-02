@@ -25,13 +25,15 @@ Produce a JSON object with this exact schema:
     {{
       "question": "<question text>",
       "options": ["A. <option>", "B. <option>", "C. <option>", "D. <option>"],
-      "answer": "<A, B, C, or D>"
+      "answer": "<A, B, C, or D>",
+      "topic": "<2-4 word concept label, title-case, no verbs, e.g. 'Bernoulli Expectation'>"
     }}
   ]
 }}
 
 Rules:
 - Choose a question count between 3 and 8 based on content density: 3–4 for short or narrow source material, 5–6 for medium, 7–8 for long or dense material with many distinct testable concepts. Do not pad thin material with trivial questions to reach a higher count.
+- topic must name the single concept the question tests — 2 to 4 words, title-case, no verbs.
 - Each question must have exactly 4 options labelled A through D.
 - Only one option is correct; set "answer" to its letter.
 - Questions MUST require applying or reasoning about concepts — not recognising a definition or finding a sentence from the text. A student who memorised the slides word-for-word but does not understand the material should get these wrong.

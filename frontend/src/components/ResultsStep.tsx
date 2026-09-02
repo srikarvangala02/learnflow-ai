@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils'
-import type { Question, EvalResult, EvalQuestionResult } from '@/lib/api'
+import type { Question, EvalResult, EvalQuestionResult, FocusArea } from '@/lib/api'
 
 interface Props {
   questions: Question[]
@@ -125,6 +125,21 @@ export function ResultsStep({ questions, userAnswers, evalResult }: Props) {
           />
         ))}
       </div>
+
+      {/* Focus Areas */}
+      {evalResult.focus_areas && evalResult.focus_areas.length > 0 && (
+        <div className="flex flex-col gap-3">
+          <h3 className="text-xs uppercase tracking-widest text-text-secondary">Focus Areas</h3>
+          {evalResult.focus_areas.map((area: FocusArea, i: number) => (
+            <div key={i} className="bg-surface border border-border rounded-xl p-4 flex flex-col gap-2">
+              <span className="inline-block self-start text-xs font-semibold uppercase tracking-widest px-2 py-0.5 rounded-full bg-accent/20 text-accent">
+                {area.topic}
+              </span>
+              <p className="text-sm text-text-secondary leading-relaxed">{area.explanation}</p>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Reset */}
       <div className="flex justify-center pb-4">

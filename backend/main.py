@@ -118,6 +118,7 @@ def render_video(render_job_id: str):
 class EvalRequest(BaseModel):
     job_id: str
     questions: list[dict]
+    user_answers: list[str] | None = None
 
 
 @app.post("/eval")
@@ -133,7 +134,7 @@ def eval_quiz(body: EvalRequest) -> dict:
     script = job["result"]
     pdf_path = UPLOADS_DIR / f"{script['file_id']}.pdf"
     pdf_text = extract_text(pdf_path)
-    result = evaluate_quiz(script, pdf_text, body.questions)
+    result = evaluate_quiz(script, pdf_text, body.questions, body.user_answers)
     return {"job_id": body.job_id, **result}
 
 

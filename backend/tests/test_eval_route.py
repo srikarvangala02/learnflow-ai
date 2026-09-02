@@ -19,11 +19,13 @@ _QUESTIONS = [
         "question": "What is the sample space?",
         "options": ["A. Set of outcomes", "B. A probability", "C. An event", "D. A function"],
         "answer": "A",
+        "topic": "Sample Space",
     },
     {
         "question": "What does E[X] represent?",
         "options": ["A. Variance", "B. Expected value", "C. Probability", "D. Std dev"],
         "answer": "B",
+        "topic": "Expected Value",
     },
 ]
 
@@ -48,6 +50,13 @@ _FAKE_EVAL_RESULT = {
             "full_source_answer": "B",
             "full_source_correct": True,
         },
+    ],
+}
+
+_FAKE_EVAL_RESULT_WITH_FOCUS = {
+    **_FAKE_EVAL_RESULT,
+    "focus_areas": [
+        {"topic": "Sample Space", "explanation": "Review the definition of a sample space."}
     ],
 }
 
@@ -87,7 +96,46 @@ def test_eval_passes_correct_args():
     with patch("main.evaluate_quiz", return_value=_FAKE_EVAL_RESULT) as mock_eval, \
          patch("main.extract_text", return_value="full pdf text"):
         client.post("/eval", json={"job_id": job_id, "questions": _QUESTIONS})
-    mock_eval.assert_called_once_with(_SCRIPT, "full pdf text", _QUESTIONS)
+    mock_eval.assert_called_once_with(_SCRIPT, "full pdf text", _QUESTIONS, None)
+
+
+def test_eval_with_user_answers_returns_focus_areas():
+    job_id = _seed_complete_job()
+    with patch("main.evaluate_quiz", return_value=_FAKE_EVAL_RESULT_WITH_FOCUS), \
+         patch("main.extract_text", return_value="full pdf text"):
+        resp = client.post("/eval", json={
+            "job_id": job_id,
+            "questions": _QUESTIONS,
+            "user_answers": ["B", "B"],  # first answer wrong (correct is A)
+        })
+    assert resp.status_code == 200
+    body = resp.json()
+    assert "focus_areas" in body
+    assert len(body["focus_areas"]) == 1
+    assert body["focus_areas"][0]["topic"] == "Sample Space"
+
+
+def test_eval_passes_user_answers_to_evaluate_quiz():
+    job_id = _seed_complete_job()
+    with patch("main.evaluate_quiz", return_value=_FAKE_EVAL_RESULT_WITH_FOCUS) as mock_eval, \
+         patch("main.extract_text", return_value="full pdf text"):
+        client.post("/eval", json={
+            "job_id": job_id,
+            "questions": _QUESTIONS,
+            "user_answers": ["B", "B"],
+        })
+    args, _ = mock_eval.call_args
+    assert args[3] == ["B", "B"]
+
+
+def test_eval_without_user_answers_omits_focus_areas():
+    job_id = _seed_complete_job()
+    with patch("main.evaluate_quiz", return_value=_FAKE_EVAL_RESULT), \
+         patch("main.extract_text", return_value="full pdf text"):
+        resp = client.post("/eval", json={"job_id": job_id, "questions": _QUESTIONS})
+    assert resp.status_code == 200
+    body = resp.json()
+    assert "focus_areas" not in body
 
 
 # --- 404 ---

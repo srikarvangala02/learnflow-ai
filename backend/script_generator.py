@@ -31,7 +31,7 @@ Produce a JSON object with this exact schema:
 }}
 
 Rules:
-- Generate between 3 and 5 questions.
+- Choose a question count between 3 and 8 based on content density: 3–4 for short or narrow source material, 5–6 for medium, 7–8 for long or dense material with many distinct testable concepts. Do not pad thin material with trivial questions to reach a higher count.
 - Each question must have exactly 4 options labelled A through D.
 - Only one option is correct; set "answer" to its letter.
 - Questions MUST require applying or reasoning about concepts — not recognising a definition or finding a sentence from the text. A student who memorised the slides word-for-word but does not understand the material should get these wrong.

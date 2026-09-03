@@ -1,6 +1,7 @@
 import json
 import pathlib
 import shlex
+import shutil
 import subprocess
 import sys
 import uuid
@@ -165,11 +166,30 @@ def _wsl_path(windows_path: pathlib.Path) -> str:
     return p
 
 
+def _build_render_props(script: dict, render_job_id: str) -> dict:
+    """Copy each slide's audio into render/public/ and return props with a staticFile-relative path per slide."""
+    audio_dest_dir = _RENDER_DIR / "public" / "audio" / render_job_id
+    audio_dest_dir.mkdir(parents=True, exist_ok=True)
+
+    slides = []
+    for slide in script["slides"]:
+        dest = audio_dest_dir / f"slide_{slide['index']}.mp3"
+        shutil.copy(slide["audio_path"], dest)
+        slides.append({
+            **slide,
+            "audio_static_path": f"audio/{render_job_id}/slide_{slide['index']}.mp3",
+        })
+    return {**script, "slides": slides}
+
+
 def _run_remotion_render(render_job_id: str, script: dict) -> None:
     jobs[render_job_id]["status"] = "running"
     try:
-        file_id = script["file_id"]
-        props_path = (UPLOADS_DIR / f"{file_id}_script.json").resolve()
+        render_props = _build_render_props(script, render_job_id)
+        props_path = (_RENDER_DIR / "out" / f"{render_job_id}_props.json").resolve()
+        props_path.parent.mkdir(parents=True, exist_ok=True)
+        props_path.write_text(json.dumps(render_props))
+
         out_path = (_RENDER_DIR / "out" / f"{render_job_id}.mp4").resolve()
         out_path.parent.mkdir(parents=True, exist_ok=True)
 

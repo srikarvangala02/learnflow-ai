@@ -21,6 +21,11 @@ def reset_state(tmp_path, monkeypatch):
 
 def _seed_complete_generate_job(tmp_path: pathlib.Path, file_id: str = "abc-123") -> str:
     """Insert a complete generate job into `jobs` and write its script JSON to disk."""
+    audio_dir = tmp_path / file_id / "audio"
+    audio_dir.mkdir(parents=True)
+    audio_path = audio_dir / "slide_0.mp3"
+    audio_path.write_bytes(b"fake mp3 bytes")
+
     script = {
         "file_id": file_id,
         "title": "Test Doc",
@@ -30,6 +35,8 @@ def _seed_complete_generate_job(tmp_path: pathlib.Path, file_id: str = "abc-123"
                 "title": "Introduction",
                 "narration": "Intro narration.",
                 "bullets": ["Point A", "Point B"],
+                "audio_path": str(audio_path.resolve()),
+                "duration_seconds": 4.2,
             }
         ],
     }
@@ -44,6 +51,32 @@ def _mock_subprocess(returncode: int = 0, stderr: bytes = b"") -> MagicMock:
     m.returncode = returncode
     m.stderr = stderr
     return m
+
+
+# ── Render-time audio props ──────────────────────────────────────────────────
+
+def test_render_copies_slide_audio_and_builds_static_path(tmp_path, monkeypatch):
+    monkeypatch.setattr(main, "UPLOADS_DIR", tmp_path)
+    job_id = _seed_complete_generate_job(tmp_path)
+
+    with patch("main.subprocess.run", return_value=_mock_subprocess(0)):
+        gen = client.post(f"/render/{job_id}")
+
+    render_job_id = gen.json()["job_id"]
+
+    copied_audio = main._RENDER_DIR / "public" / "audio" / render_job_id / "slide_0.mp3"
+    assert copied_audio.exists()
+    assert copied_audio.read_bytes() == b"fake mp3 bytes"
+
+    props_path = main._RENDER_DIR / "out" / f"{render_job_id}_props.json"
+    assert props_path.exists()
+    props = json.loads(props_path.read_text())
+    assert props["slides"][0]["audio_static_path"] == f"audio/{render_job_id}/slide_0.mp3"
+    assert props["slides"][0]["duration_seconds"] == 4.2
+
+    # cleanup so repeated test runs don't accumulate fixtures under render/
+    copied_audio.unlink()
+    props_path.unlink()
 
 
 # ── POST /render/{job_id} ────────────────────────────────────────────────────

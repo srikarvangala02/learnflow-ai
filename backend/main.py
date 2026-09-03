@@ -1,5 +1,6 @@
 import json
 import pathlib
+import shlex
 import subprocess
 import sys
 import uuid
@@ -180,9 +181,9 @@ def _run_remotion_render(render_job_id: str, script: dict) -> None:
             nvm_init = ". /home/srikarvan/.nvm/nvm.sh"
             render_cmd = (
                 f"{nvm_init} && "
-                f"cd {wsl_render_dir} && "
-                f'npx remotion render src/index.ts LearnFlowVideo "{wsl_out}" '
-                f'"--props={wsl_props}"'
+                f"cd {shlex.quote(wsl_render_dir)} && "
+                f"npx remotion render src/index.ts LearnFlowVideo {shlex.quote(wsl_out)} "
+                f"--props={shlex.quote(wsl_props)}"
             )
             cmd = ["wsl", "-d", "Ubuntu", "--", "bash", "-c", render_cmd]
             cwd = None  # WSL cd is handled in the shell command

@@ -2,7 +2,7 @@ import logging
 
 import pytest
 
-from tts_generator import MAX_SLIDE_SECONDS, synthesize_slide_audio
+from tts_generator import DEFAULT_VOICE_ID, MAX_SLIDE_SECONDS, synthesize_slide_audio
 
 SLIDES = [
     {"index": 0, "title": "Intro", "narration": "Hello there.", "bullets": ["A"]},
@@ -56,7 +56,7 @@ def test_synthesizes_audio_for_each_slide(tmp_path, monkeypatch):
         assert slide["title"] == SLIDES[i]["title"]
         assert slide["index"] == i
 
-    assert calls[0]["voice_id"]
+    assert calls[0]["voice_id"] == DEFAULT_VOICE_ID
     assert calls[0]["text"] == "Hello there."
     assert calls[0]["model_id"] == "eleven_multilingual_v2"
     assert calls[0]["output_format"] == "mp3_44100_128"

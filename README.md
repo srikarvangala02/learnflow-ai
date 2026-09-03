@@ -48,6 +48,8 @@ pip install -r requirements.txt
 uvicorn main:app --reload
 ```
 
+Requires `ANTHROPIC_API_KEY` and `ELEVENLABS_API_KEY` to be set as environment variables (see `backend/.env.example`).
+
 ### Frontend
 
 ```bash

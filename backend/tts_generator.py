@@ -26,8 +26,8 @@ def synthesize_slide_audio(file_id: str, slides: list[dict], uploads_dir: pathli
     audio_dir.mkdir(parents=True, exist_ok=True)
 
     annotated_slides = []
-    for slide in slides:
-        audio_path = audio_dir / f"slide_{slide['index']}.mp3"
+    for i, slide in enumerate(slides):
+        audio_path = audio_dir / f"slide_{i}.mp3"
         chunks = client.text_to_speech.convert(
             voice_id=voice_id,
             text=slide["narration"],

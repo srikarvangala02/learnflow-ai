@@ -172,12 +172,12 @@ def _build_render_props(script: dict, render_job_id: str) -> dict:
     audio_dest_dir.mkdir(parents=True, exist_ok=True)
 
     slides = []
-    for slide in script["slides"]:
-        dest = audio_dest_dir / f"slide_{slide['index']}.mp3"
+    for i, slide in enumerate(script["slides"]):
+        dest = audio_dest_dir / f"slide_{i}.mp3"
         shutil.copy(slide["audio_path"], dest)
         slides.append({
             **slide,
-            "audio_static_path": f"audio/{render_job_id}/slide_{slide['index']}.mp3",
+            "audio_static_path": f"audio/{render_job_id}/slide_{i}.mp3",
         })
     return {**script, "slides": slides}
 

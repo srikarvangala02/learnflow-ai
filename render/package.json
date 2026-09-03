@@ -5,7 +5,7 @@
   "scripts": {
     "studio": "npx remotion studio src/index.ts",
     "compositions": "npx remotion compositions src/index.ts",
-    "render": "npx remotion render src/index.ts LearnFlowSlide out/video.mp4"
+    "render": "npx remotion render src/index.ts LearnFlowVideo out/video.mp4"
   },
   "dependencies": {
     "react": "^18.3.1",

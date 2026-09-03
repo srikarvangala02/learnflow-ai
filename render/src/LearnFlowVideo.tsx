@@ -27,12 +27,12 @@ export function LearnFlowVideo({ slides }: VideoProps) {
   let cursor = 0
   return (
     <>
-      {slides.map((slide) => {
+      {slides.map((slide, i) => {
         const durationInFrames = slideDurationInFrames(slide)
         const from = cursor
         cursor += durationInFrames
         return (
-          <Sequence key={slide.index} from={from} durationInFrames={durationInFrames}>
+          <Sequence key={i} from={from} durationInFrames={durationInFrames}>
             <Slide slide={slide} />
             <Audio src={staticFile(slide.audio_static_path)} />
           </Sequence>

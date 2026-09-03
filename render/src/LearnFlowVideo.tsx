@@ -1,4 +1,4 @@
-import { useCurrentFrame } from 'remotion'
+import { Audio, Sequence, staticFile } from 'remotion'
 import { Slide } from './Slide'
 
 export type SlideData = {
@@ -6,6 +6,8 @@ export type SlideData = {
   title: string
   narration: string
   bullets: string[]
+  audio_static_path: string
+  duration_seconds: number
 }
 
 export type VideoProps = {
@@ -13,12 +15,29 @@ export type VideoProps = {
   slides: SlideData[]
 }
 
-export const FRAMES_PER_SLIDE = 150 // 5 s at 30 fps
+export const FPS = 30
+export const MIN_SLIDE_SECONDS = 3.0
+
+export function slideDurationInFrames(slide: SlideData): number {
+  const seconds = Math.max(slide.duration_seconds, MIN_SLIDE_SECONDS)
+  return Math.ceil(seconds * FPS)
+}
 
 export function LearnFlowVideo({ slides }: VideoProps) {
-  const frame = useCurrentFrame()
-  const slideIndex = Math.min(Math.floor(frame / FRAMES_PER_SLIDE), slides.length - 1)
-  const slide = slides[slideIndex]
-  if (!slide) return null
-  return <Slide slide={slide} />
+  let cursor = 0
+  return (
+    <>
+      {slides.map((slide) => {
+        const durationInFrames = slideDurationInFrames(slide)
+        const from = cursor
+        cursor += durationInFrames
+        return (
+          <Sequence key={slide.index} from={from} durationInFrames={durationInFrames}>
+            <Slide slide={slide} />
+            <Audio src={staticFile(slide.audio_static_path)} />
+          </Sequence>
+        )
+      })}
+    </>
+  )
 }

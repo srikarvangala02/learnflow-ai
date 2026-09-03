@@ -60,7 +60,8 @@ def test_generate_returns_job_id(tmp_path, monkeypatch):
 
     script_result = {"file_id": "abc-123", "title": "T", "slides": []}
     with patch("main.extract_text", return_value="text content"), \
-         patch("main.generate_script", return_value=script_result):
+         patch("main.generate_script", return_value=script_result), \
+         patch("main.synthesize_slide_audio", return_value=[]):
         response = client.post("/generate/abc-123")
 
     assert response.status_code == 200
@@ -70,6 +71,60 @@ def test_generate_returns_job_id(tmp_path, monkeypatch):
 def test_generate_unknown_file_id_returns_404():
     response = client.post("/generate/nonexistent-file-id")
     assert response.status_code == 404
+
+
+def test_generate_job_merges_tts_audio_into_slides(tmp_path, monkeypatch):
+    monkeypatch.setattr(main, "UPLOADS_DIR", tmp_path)
+    (tmp_path / "abc-123.pdf").write_bytes(b"%PDF-1.4")
+
+    script_result = {
+        "file_id": "abc-123",
+        "title": "T",
+        "slides": [{"index": 0, "title": "S1", "narration": "Hi.", "bullets": ["A"]}],
+    }
+    # Captured before the request runs: `generate_script` is mocked to return
+    # `script_result` itself (no copy), and `_run_generate` reassigns
+    # `script["slides"]` in place, which mutates `script_result` too. Reading
+    # `script_result["slides"]` after the call would see the post-mutation
+    # (audio-annotated) value instead of what was actually passed in.
+    original_slides = script_result["slides"]
+    audio_annotated = [
+        {**script_result["slides"][0], "audio_path": "/fake/slide_0.mp3", "duration_seconds": 4.5},
+    ]
+
+    with patch("main.extract_text", return_value="text content"), \
+         patch("main.generate_script", return_value=script_result), \
+         patch("main.synthesize_slide_audio", return_value=audio_annotated) as mock_tts:
+        gen = client.post("/generate/abc-123")
+
+    job_id = gen.json()["job_id"]
+    status = client.get(f"/job/{job_id}")
+    body = status.json()
+
+    assert body["status"] == "complete"
+    assert body["result"]["slides"][0]["audio_path"] == "/fake/slide_0.mp3"
+    assert body["result"]["slides"][0]["duration_seconds"] == 4.5
+    mock_tts.assert_called_once_with("abc-123", original_slides, tmp_path)
+
+
+def test_generate_job_fails_when_tts_raises(tmp_path, monkeypatch):
+    monkeypatch.setattr(main, "UPLOADS_DIR", tmp_path)
+    (tmp_path / "abc-123.pdf").write_bytes(b"%PDF-1.4")
+
+    script_result = {"file_id": "abc-123", "title": "T", "slides": []}
+
+    with patch("main.extract_text", return_value="text content"), \
+         patch("main.generate_script", return_value=script_result), \
+         patch("main.synthesize_slide_audio", side_effect=ValueError("ELEVENLABS_API_KEY environment variable is not set")):
+        gen = client.post("/generate/abc-123")
+
+    job_id = gen.json()["job_id"]
+    status = client.get(f"/job/{job_id}")
+    body = status.json()
+
+    assert body["status"] == "error"
+    assert "ELEVENLABS_API_KEY" in body["error"]
+    assert body["result"] is None
 
 
 # ── /job ─────────────────────────────────────────────────────────────────────
@@ -85,7 +140,8 @@ def test_job_status_reflects_background_task_result(tmp_path, monkeypatch):
 
     script_result = {"file_id": "abc-123", "title": "Test", "slides": []}
     with patch("main.extract_text", return_value="text"), \
-         patch("main.generate_script", return_value=script_result):
+         patch("main.generate_script", return_value=script_result), \
+         patch("main.synthesize_slide_audio", return_value=[]):
         gen = client.post("/generate/abc-123")
 
     job_id = gen.json()["job_id"]

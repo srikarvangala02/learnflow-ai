@@ -12,6 +12,7 @@ from pydantic import BaseModel
 
 from eval_runner import evaluate_quiz
 from script_generator import extract_text, generate_script, generate_quiz
+from tts_generator import synthesize_slide_audio
 
 app = FastAPI(title="learnflow-ai")
 
@@ -65,6 +66,7 @@ def _run_generate(job_id: str, file_id: str, pdf_path: pathlib.Path) -> None:
     try:
         text = extract_text(pdf_path)
         script = generate_script(file_id, text)
+        script["slides"] = synthesize_slide_audio(file_id, script["slides"], UPLOADS_DIR)
         script_path = pdf_path.parent / f"{file_id}_script.json"
         script_path.write_text(json.dumps(script))
         jobs[job_id] = {"status": "complete", "result": script, "error": None}

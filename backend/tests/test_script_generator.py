@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from script_generator import extract_text, generate_script
+from script_generator import extract_text, generate_script, _USER_TEMPLATE
 
 
 def _make_mock_pdf(pages):
@@ -115,3 +115,7 @@ def test_generate_script_raises_on_persistent_invalid_json(monkeypatch):
             generate_script("file-abc", "some text")
 
     assert mock_cls.return_value.messages.create.call_count == 2
+
+
+def test_user_template_caps_narration_speaking_length():
+    assert "12 seconds" in _USER_TEMPLATE

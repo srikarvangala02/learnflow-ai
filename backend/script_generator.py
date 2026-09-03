@@ -54,7 +54,7 @@ Produce a JSON object with this exact schema:
     {{
       "index": <int starting at 0>,
       "title": "<slide title>",
-      "narration": "<1-3 sentence paragraph suitable for text-to-speech>",
+      "narration": "<1-2 short sentences suitable for text-to-speech, speakable in under 12 seconds>",
       "bullets": ["<key point>", ...]
     }}
   ]
@@ -64,6 +64,7 @@ Rules:
 - Generate between 5 and 8 slides.
 - Each slide must have 2 to 4 bullets.
 - Narration must be complete sentences, not bullet points.
+- Narration must be speakable in under 12 seconds at a natural pace — roughly 30 words or fewer. Prefer a single sentence; use two only if both are short.
 - Return only the JSON object. No markdown, no explanation.\
 """
 

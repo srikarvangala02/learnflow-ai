@@ -223,6 +223,9 @@ __marimo__/
 node_modules/
 dist/
 
+# Git worktrees (superpowers subagent-driven-development)
+.worktrees/
+
 # Remotion render output
 render/out/
 

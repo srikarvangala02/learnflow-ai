@@ -153,6 +153,15 @@ def quiz(job_id: str) -> dict:
     return {"job_id": job_id, **result}
 
 
+def _wsl_path(windows_path: pathlib.Path) -> str:
+    """Convert a Windows absolute path to a WSL /mnt/... path."""
+    p = str(windows_path).replace("\\", "/")
+    # C:/foo -> /mnt/c/foo
+    if len(p) >= 2 and p[1] == ":":
+        return f"/mnt/{p[0].lower()}{p[2:]}"
+    return p
+
+
 def _run_remotion_render(render_job_id: str, script: dict) -> None:
     jobs[render_job_id]["status"] = "running"
     try:
@@ -160,26 +169,36 @@ def _run_remotion_render(render_job_id: str, script: dict) -> None:
         props_path = (UPLOADS_DIR / f"{file_id}_script.json").resolve()
         out_path = (_RENDER_DIR / "out" / f"{render_job_id}.mp4").resolve()
         out_path.parent.mkdir(parents=True, exist_ok=True)
-        npx = "npx.cmd" if sys.platform == "win32" else "npx"
-        cmd = [
-            npx, "remotion", "render",
-            "src/index.ts",
-            "LearnFlowVideo",
-            str(out_path),
-            "--props", str(props_path),
-        ]
+
         if sys.platform == "win32":
-            for candidate in [
-                r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
-                r"C:\Program Files\Google\Chrome\Application\chrome.exe",
-                r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
-            ]:
-                if pathlib.Path(candidate).exists():
-                    cmd += ["--browser-executable", candidate]
-                    break
+            # On Windows ARM, Chrome Headless Shell is unavailable.
+            # Route the render through WSL2 (Ubuntu) where the linux-arm64
+            # Chromium binary works correctly.
+            wsl_props = _wsl_path(props_path)
+            wsl_out = _wsl_path(out_path)
+            wsl_render_dir = _wsl_path(_RENDER_DIR)
+            nvm_init = ". /home/srikarvan/.nvm/nvm.sh"
+            render_cmd = (
+                f"{nvm_init} && "
+                f"cd {wsl_render_dir} && "
+                f'npx remotion render src/index.ts LearnFlowVideo "{wsl_out}" '
+                f'"--props={wsl_props}"'
+            )
+            cmd = ["wsl", "-d", "Ubuntu", "--", "bash", "-c", render_cmd]
+            cwd = None  # WSL cd is handled in the shell command
+        else:
+            cmd = [
+                "npx", "remotion", "render",
+                "src/index.ts",
+                "LearnFlowVideo",
+                str(out_path),
+                "--props", str(props_path),
+            ]
+            cwd = str(_RENDER_DIR)
+
         result = subprocess.run(
             cmd,
-            cwd=str(_RENDER_DIR),
+            cwd=cwd,
             capture_output=True,
             check=False,
         )

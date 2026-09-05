@@ -17,6 +17,7 @@ const defaultProps: VideoProps = {
       bullets: [''],
       audio_static_path: '',
       duration_seconds: MIN_SLIDE_SECONDS,
+      type: 'bullets',
     },
   ],
 }

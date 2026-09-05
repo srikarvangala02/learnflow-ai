@@ -81,5 +81,45 @@ def test_formula_rejects_annotation_id_missing_from_latex():
         })
 
 
+def test_diagram_rejects_6_edges():
+    with pytest.raises(ValidationError):
+        DiagramVisual.model_validate({
+            "nodes": [
+                {"id": "A", "label": "A", "x": 50, "y": 30, "shape": "circle"},
+                {"id": "B", "label": "B", "x": 30, "y": 60, "shape": "circle"},
+            ],
+            "edges": [
+                {"from": "A", "to": "B"},
+                {"from": "B", "to": "A"},
+                {"from": "A", "to": "B", "label": "second"},
+                {"from": "B", "to": "A", "label": "second"},
+                {"from": "A", "to": "B", "label": "third"},
+                {"from": "B", "to": "A", "label": "third"},
+            ],
+        })
+
+
+def test_formula_rejects_0_annotations():
+    with pytest.raises(ValidationError):
+        FormulaVisual.model_validate({
+            "latex": "\\htmlId{a}{E[X]}",
+            "annotations": [],
+        })
+
+
+def test_formula_rejects_5_annotations():
+    with pytest.raises(ValidationError):
+        FormulaVisual.model_validate({
+            "latex": "\\htmlId{a}{A} \\htmlId{b}{B} \\htmlId{c}{C} \\htmlId{d}{D} \\htmlId{e}{E}",
+            "annotations": [
+                {"id": "a", "label": "First"},
+                {"id": "b", "label": "Second"},
+                {"id": "c", "label": "Third"},
+                {"id": "d", "label": "Fourth"},
+                {"id": "e", "label": "Fifth"},
+            ],
+        })
+
+
 def test_visual_models_registry_has_all_four_types():
     assert set(_VISUAL_MODELS.keys()) == {"curve_plot", "bar_chart", "diagram", "formula"}

@@ -1,9 +1,138 @@
 import json
+import logging
 import os
 from pathlib import Path
+from typing import Literal
 
 import anthropic
 import pdfplumber
+from pydantic import BaseModel, Field, ValidationError, field_validator, model_validator
+
+logger = logging.getLogger(__name__)
+
+
+class CurvePoint(BaseModel):
+    x: float
+    y: float
+
+
+class CurveSeries(BaseModel):
+    label: str
+    points: list[CurvePoint]
+
+    @field_validator("points")
+    @classmethod
+    def _check_point_count(cls, v: list[CurvePoint]) -> list[CurvePoint]:
+        if not (8 <= len(v) <= 30):
+            raise ValueError("points must have between 8 and 30 entries")
+        return v
+
+
+class CurvePlotVisual(BaseModel):
+    x_label: str
+    y_label: str
+    x_min: float
+    x_max: float
+    series: list[CurveSeries]
+
+    @field_validator("series")
+    @classmethod
+    def _check_series_count(cls, v: list[CurveSeries]) -> list[CurveSeries]:
+        if not (1 <= len(v) <= 3):
+            raise ValueError("series must have between 1 and 3 entries")
+        return v
+
+
+class Bar(BaseModel):
+    label: str
+    value: float
+
+
+class BarChartVisual(BaseModel):
+    y_label: str
+    bars: list[Bar]
+
+    @field_validator("bars")
+    @classmethod
+    def _check_bar_count(cls, v: list[Bar]) -> list[Bar]:
+        if not (2 <= len(v) <= 6):
+            raise ValueError("bars must have between 2 and 6 entries")
+        return v
+
+
+class DiagramNode(BaseModel):
+    id: str
+    label: str
+    x: float
+    y: float
+    shape: Literal["circle", "rect", "point"]
+
+
+class DiagramEdge(BaseModel):
+    from_: str = Field(alias="from")
+    to: str
+    label: str | None = None
+
+    model_config = {"populate_by_name": True}
+
+
+class DiagramVisual(BaseModel):
+    nodes: list[DiagramNode]
+    edges: list[DiagramEdge] = []
+
+    @field_validator("nodes")
+    @classmethod
+    def _check_node_count(cls, v: list[DiagramNode]) -> list[DiagramNode]:
+        if not (2 <= len(v) <= 6):
+            raise ValueError("nodes must have between 2 and 6 entries")
+        return v
+
+    @field_validator("edges")
+    @classmethod
+    def _check_edge_count(cls, v: list[DiagramEdge]) -> list[DiagramEdge]:
+        if len(v) > 5:
+            raise ValueError("edges must have at most 5 entries")
+        return v
+
+    @model_validator(mode="after")
+    def _check_edges_reference_nodes(self) -> "DiagramVisual":
+        node_ids = {n.id for n in self.nodes}
+        for edge in self.edges:
+            if edge.from_ not in node_ids or edge.to not in node_ids:
+                raise ValueError(f"edge references unknown node id (from={edge.from_!r}, to={edge.to!r})")
+        return self
+
+
+class FormulaAnnotation(BaseModel):
+    id: str
+    label: str
+
+
+class FormulaVisual(BaseModel):
+    latex: str
+    annotations: list[FormulaAnnotation]
+
+    @field_validator("annotations")
+    @classmethod
+    def _check_annotation_count(cls, v: list[FormulaAnnotation]) -> list[FormulaAnnotation]:
+        if not (1 <= len(v) <= 4):
+            raise ValueError("annotations must have between 1 and 4 entries")
+        return v
+
+    @model_validator(mode="after")
+    def _check_annotation_ids_in_latex(self) -> "FormulaVisual":
+        for ann in self.annotations:
+            if f"\\htmlId{{{ann.id}}}" not in self.latex:
+                raise ValueError(f"annotation id {ann.id!r} not found in latex")
+        return self
+
+
+_VISUAL_MODELS: dict[str, type[BaseModel]] = {
+    "curve_plot": CurvePlotVisual,
+    "bar_chart": BarChartVisual,
+    "diagram": DiagramVisual,
+    "formula": FormulaVisual,
+}
 
 _SYSTEM_PROMPT = (
     "You are an expert educator creating a narrated slide deck from source material. "

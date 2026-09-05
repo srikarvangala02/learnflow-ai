@@ -213,17 +213,36 @@ Produce a JSON object with this exact schema:
       "index": <int starting at 0>,
       "title": "<slide title>",
       "narration": "<1-2 short sentences suitable for text-to-speech, speakable in under 12 seconds>",
-      "bullets": ["<key point>", ...]
+      "bullets": ["<key point>", ...],
+      "type": "<one of: bullets, curve_plot, bar_chart, diagram, formula>",
+      "visual": <template-specific object, see below — omit or use {{}} when type is "bullets">
     }}
   ]
 }}
 
 Rules:
 - Generate between 5 and 8 slides.
-- Each slide must have 2 to 4 bullets.
+- Each slide must have 2 to 4 bullets, regardless of its type — bullets are always required, even for slides with a visual.
 - Narration must be complete sentences, not bullet points.
 - Narration must be speakable in under 12 seconds at a natural pace — roughly 30 words or fewer. Prefer a single sentence; use two only if both are short.
-- Return only the JSON object. No markdown, no explanation.\
+- Return only the JSON object. No markdown, no explanation.
+
+Visual types — choose "type" per slide based on what the content actually is:
+- "bullets" (default): conceptual, definitional, or qualitative content. Use this unless the content clearly fits one of the types below.
+- "curve_plot": content describes a function, growth/decay pattern, or distribution over a continuous variable. "visual" shape:
+  {{"x_label": "<axis label>", "y_label": "<axis label>", "x_min": <number>, "x_max": <number>, "series": [{{"label": "<series name>", "points": [{{"x": <number>, "y": <number>}}, ...]}}]}}
+  1 to 3 series, each with 8 to 30 points ordered by ascending x. Supply real sampled (x, y) values — never a symbolic expression or code.
+- "bar_chart": content compares named discrete quantities. "visual" shape:
+  {{"y_label": "<axis label>", "bars": [{{"label": "<name>", "value": <number>}}, ...]}}
+  2 to 6 bars.
+- "diagram": content describes spatial, relational, or set structure between named entities (including plain coordinate points, using shape "point"). "visual" shape:
+  {{"nodes": [{{"id": "<short id>", "label": "<display label>", "x": <0-100>, "y": <0-100>, "shape": "<circle, rect, or point>"}}, ...], "edges": [{{"from": "<node id>", "to": "<node id>", "label": "<optional edge label>"}}, ...]}}
+  2 to 6 nodes, 0 to 5 edges. x and y are percentages of the canvas (0-100). Every edge's "from" and "to" must match a node "id".
+- "formula": the slide centers on one named equation worth breaking into parts. "visual" shape:
+  {{"latex": "<LaTeX with each annotated part wrapped in \\htmlId{{<id>}}{{<expression>}}>", "annotations": [{{"id": "<matching id>", "label": "<what this part means>"}}, ...]}}
+  1 to 4 annotations. Every annotation "id" must appear as a \\htmlId{{...}} wrapper somewhere in "latex".
+
+Across the whole deck, no more than half the slides should use a non-"bullets" type — visuals should earn their place on a slide, not be used for novelty.\
 """
 
 

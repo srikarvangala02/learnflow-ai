@@ -174,3 +174,16 @@ def test_generate_script_keeps_valid_visual_slide(monkeypatch):
 
     assert result["slides"][0]["type"] == "bar_chart"
     assert result["slides"][0]["visual"]["bars"][0]["label"] == "A"
+
+
+def test_user_template_documents_all_visual_types():
+    for keyword in ("curve_plot", "bar_chart", "diagram", "formula"):
+        assert keyword in _USER_TEMPLATE
+
+
+def test_user_template_documents_htmlid_convention():
+    assert "\\htmlId" in _USER_TEMPLATE
+
+
+def test_user_template_documents_visual_overuse_rule():
+    assert "no more than half" in _USER_TEMPLATE.lower()

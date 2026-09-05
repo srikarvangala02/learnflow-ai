@@ -1,7 +1,27 @@
 import { Audio, Sequence, staticFile } from 'remotion'
 import { Slide } from './Slide'
 
-export type SlideData = {
+export type CurvePoint = { x: number; y: number }
+export type CurveSeries = { label: string; points: CurvePoint[] }
+export type CurvePlotVisual = {
+  x_label: string
+  y_label: string
+  x_min: number
+  x_max: number
+  series: CurveSeries[]
+}
+
+export type Bar = { label: string; value: number }
+export type BarChartVisual = { y_label: string; bars: Bar[] }
+
+export type DiagramNode = { id: string; label: string; x: number; y: number; shape: 'circle' | 'rect' | 'point' }
+export type DiagramEdge = { from: string; to: string; label?: string }
+export type DiagramVisual = { nodes: DiagramNode[]; edges: DiagramEdge[] }
+
+export type FormulaAnnotation = { id: string; label: string }
+export type FormulaVisual = { latex: string; annotations: FormulaAnnotation[] }
+
+type SlideBase = {
   index: number
   title: string
   narration: string
@@ -9,6 +29,19 @@ export type SlideData = {
   audio_static_path: string
   duration_seconds: number
 }
+
+export type BulletsSlideData = SlideBase & { type: 'bullets' }
+export type CurvePlotSlideData = SlideBase & { type: 'curve_plot'; visual: CurvePlotVisual }
+export type BarChartSlideData = SlideBase & { type: 'bar_chart'; visual: BarChartVisual }
+export type DiagramSlideData = SlideBase & { type: 'diagram'; visual: DiagramVisual }
+export type FormulaSlideData = SlideBase & { type: 'formula'; visual: FormulaVisual }
+
+export type SlideData =
+  | BulletsSlideData
+  | CurvePlotSlideData
+  | BarChartSlideData
+  | DiagramSlideData
+  | FormulaSlideData
 
 export type VideoProps = {
   title: string

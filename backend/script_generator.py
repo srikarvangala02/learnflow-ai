@@ -262,6 +262,7 @@ def generate_script(file_id: str, text: str) -> dict:
         ])
         script = json.loads(raw2)
 
+    script["slides"] = _sanitize_slide_types(script.get("slides", []))
     script["file_id"] = file_id
     return script
 

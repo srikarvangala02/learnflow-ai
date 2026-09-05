@@ -119,3 +119,58 @@ def test_generate_script_raises_on_persistent_invalid_json(monkeypatch):
 
 def test_user_template_caps_narration_speaking_length():
     assert "12 seconds" in _USER_TEMPLATE
+
+
+def test_generate_script_sanitizes_invalid_visual_slide(monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+
+    script_body = {
+        "title": "Test Document",
+        "slides": [
+            {
+                "index": 0,
+                "title": "Bad Chart",
+                "narration": "This has an invalid bar chart.",
+                "bullets": ["Point A", "Point B"],
+                "type": "bar_chart",
+                "visual": {"y_label": "Value", "bars": [{"label": "Only One", "value": 5}]},
+            }
+        ],
+    }
+    mock_response = MagicMock()
+    mock_response.content = [MagicMock(text=json.dumps(script_body))]
+
+    with patch("script_generator.anthropic.Anthropic") as mock_cls:
+        mock_cls.return_value.messages.create.return_value = mock_response
+        result = generate_script("file-abc", "some source text")
+
+    assert result["slides"][0]["type"] == "bullets"
+    assert "visual" not in result["slides"][0]
+    assert result["slides"][0]["bullets"] == ["Point A", "Point B"]
+
+
+def test_generate_script_keeps_valid_visual_slide(monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+
+    script_body = {
+        "title": "Test Document",
+        "slides": [
+            {
+                "index": 0,
+                "title": "Good Chart",
+                "narration": "This has a valid bar chart.",
+                "bullets": ["Point A", "Point B"],
+                "type": "bar_chart",
+                "visual": {"y_label": "Value", "bars": [{"label": "A", "value": 1}, {"label": "B", "value": 2}]},
+            }
+        ],
+    }
+    mock_response = MagicMock()
+    mock_response.content = [MagicMock(text=json.dumps(script_body))]
+
+    with patch("script_generator.anthropic.Anthropic") as mock_cls:
+        mock_cls.return_value.messages.create.return_value = mock_response
+        result = generate_script("file-abc", "some source text")
+
+    assert result["slides"][0]["type"] == "bar_chart"
+    assert result["slides"][0]["visual"]["bars"][0]["label"] == "A"

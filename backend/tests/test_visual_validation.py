@@ -123,3 +123,48 @@ def test_formula_rejects_5_annotations():
 
 def test_visual_models_registry_has_all_four_types():
     assert set(_VISUAL_MODELS.keys()) == {"curve_plot", "bar_chart", "diagram", "formula"}
+
+
+from script_generator import _sanitize_slide_types
+
+
+def test_sanitize_leaves_valid_visual_slide_untouched():
+    slides = [{
+        "index": 0, "title": "T", "narration": "N", "bullets": ["a", "b"],
+        "type": "bar_chart",
+        "visual": {"y_label": "V", "bars": [{"label": "A", "value": 1}, {"label": "B", "value": 2}]},
+    }]
+    result = _sanitize_slide_types(slides)
+    assert result[0]["type"] == "bar_chart"
+    assert result[0]["visual"]["bars"][0]["label"] == "A"
+
+
+def test_sanitize_falls_back_invalid_visual_to_bullets():
+    slides = [{
+        "index": 0, "title": "T", "narration": "N", "bullets": ["a", "b"],
+        "type": "bar_chart",
+        "visual": {"y_label": "V", "bars": [{"label": "Only One", "value": 1}]},
+    }]
+    result = _sanitize_slide_types(slides)
+    assert result[0]["type"] == "bullets"
+    assert "visual" not in result[0]
+    assert result[0]["bullets"] == ["a", "b"]
+
+
+def test_sanitize_falls_back_unknown_type_to_bullets():
+    slides = [{"index": 0, "title": "T", "narration": "N", "bullets": ["a"], "type": "pie_chart", "visual": {}}]
+    result = _sanitize_slide_types(slides)
+    assert result[0]["type"] == "bullets"
+    assert "visual" not in result[0]
+
+
+def test_sanitize_leaves_bullets_slide_untouched():
+    slides = [{"index": 0, "title": "T", "narration": "N", "bullets": ["a", "b"], "type": "bullets"}]
+    result = _sanitize_slide_types(slides)
+    assert result[0] == slides[0]
+
+
+def test_sanitize_defaults_missing_type_to_bullets():
+    slides = [{"index": 0, "title": "T", "narration": "N", "bullets": ["a", "b"]}]
+    result = _sanitize_slide_types(slides)
+    assert result[0]["bullets"] == ["a", "b"]

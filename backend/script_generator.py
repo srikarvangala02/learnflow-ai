@@ -134,6 +134,35 @@ _VISUAL_MODELS: dict[str, type[BaseModel]] = {
     "formula": FormulaVisual,
 }
 
+
+def _sanitize_slide_types(slides: list[dict]) -> list[dict]:
+    sanitized = []
+    for slide in slides:
+        slide_type = slide.get("type", "bullets")
+        if slide_type == "bullets":
+            sanitized.append(slide)
+            continue
+
+        model = _VISUAL_MODELS.get(slide_type)
+        if model is None:
+            logger.warning("Slide %s has unknown type %r; falling back to bullets", slide.get("index"), slide_type)
+            fallback = {k: v for k, v in slide.items() if k != "visual"}
+            fallback["type"] = "bullets"
+            sanitized.append(fallback)
+            continue
+
+        try:
+            model.model_validate(slide.get("visual") or {})
+            sanitized.append(slide)
+        except ValidationError as exc:
+            logger.warning("Slide %s visual failed validation (%s); falling back to bullets", slide.get("index"), exc)
+            fallback = {k: v for k, v in slide.items() if k != "visual"}
+            fallback["type"] = "bullets"
+            sanitized.append(fallback)
+
+    return sanitized
+
+
 _SYSTEM_PROMPT = (
     "You are an expert educator creating a narrated slide deck from source material. "
     "Your output must be valid JSON and nothing else — no markdown fences, no commentary."

@@ -62,7 +62,14 @@ export function FormulaHighlight({ visual }: { visual: FormulaVisual }) {
     }
   }, [html, visual.annotations, handle])
 
-  const equationScale = spring({ frame, fps, config: { damping: 14, mass: 0.6 } })
+  // Opacity, not transform: scale() — a scale transform changes the
+  // geometry getBoundingClientRect() reports for this element's children,
+  // so measuring while the entrance animation is still under way (e.g. at
+  // scale ~0 on the first mounted frame) collapses every htmlId span's
+  // bounding box toward the same degenerate point. Opacity never affects
+  // layout/bounding-box geometry, so the equation's true position is
+  // stable and measurable from frame 0 regardless of the reveal's progress.
+  const equationOpacity = spring({ frame, fps, config: { damping: 14, mass: 0.6 } })
 
   return (
     <div
@@ -73,7 +80,7 @@ export function FormulaHighlight({ visual }: { visual: FormulaVisual }) {
     >
       <div
         ref={containerRef}
-        style={{ fontSize: 56, color: '#e0e0ff', transform: `scale(${equationScale})`, position: 'relative' }}
+        style={{ fontSize: 56, color: '#e0e0ff', opacity: equationOpacity, position: 'relative' }}
         dangerouslySetInnerHTML={{ __html: html }}
       />
       <svg style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>

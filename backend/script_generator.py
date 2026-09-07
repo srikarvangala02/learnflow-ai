@@ -42,6 +42,12 @@ class CurvePlotVisual(BaseModel):
             raise ValueError("series must have between 1 and 3 entries")
         return v
 
+    @model_validator(mode="after")
+    def _check_x_domain(self) -> "CurvePlotVisual":
+        if not (self.x_max > self.x_min):
+            raise ValueError(f"x_max ({self.x_max}) must be greater than x_min ({self.x_min})")
+        return self
+
 
 class Bar(BaseModel):
     label: str
@@ -152,7 +158,8 @@ def _sanitize_slide_types(slides: list[dict]) -> list[dict]:
             continue
 
         try:
-            model.model_validate(slide.get("visual") or {})
+            validated = model.model_validate(slide.get("visual") or {})
+            slide = {**slide, "visual": validated.model_dump(by_alias=True)}
             sanitized.append(slide)
         except ValidationError as exc:
             logger.warning("Slide %s visual failed validation (%s); falling back to bullets", slide.get("index"), exc)

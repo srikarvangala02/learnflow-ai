@@ -10,7 +10,7 @@ export function BarChart({ visual }: { visual: BarChartVisual }) {
   const frame = useCurrentFrame()
   const { fps } = useVideoConfig()
 
-  const maxValue = Math.max(...visual.bars.map((b) => b.value))
+  const maxValue = Math.max(...visual.bars.map((b) => b.value)) || 1
   const plotHeight = CHART_HEIGHT - 2 * MARGIN
   const plotWidth = CHART_WIDTH - 2 * MARGIN
   const gap = plotWidth / visual.bars.length

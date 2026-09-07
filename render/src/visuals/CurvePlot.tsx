@@ -12,8 +12,9 @@ const MARGIN = 80
 const APPROX_PATH_LENGTH = 4000
 
 function toScreen(x: number, y: number, visual: CurvePlotVisual, yMin: number, yMax: number) {
+  const ySpan = yMax - yMin || 1
   const px = MARGIN + ((x - visual.x_min) / (visual.x_max - visual.x_min)) * (PLOT_WIDTH - 2 * MARGIN)
-  const py = MARGIN + (1 - (y - yMin) / (yMax - yMin)) * (PLOT_HEIGHT - 2 * MARGIN)
+  const py = MARGIN + (1 - (y - yMin) / ySpan) * (PLOT_HEIGHT - 2 * MARGIN)
   return { px, py }
 }
 

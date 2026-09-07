@@ -168,3 +168,49 @@ def test_sanitize_defaults_missing_type_to_bullets():
     slides = [{"index": 0, "title": "T", "narration": "N", "bullets": ["a", "b"]}]
     result = _sanitize_slide_types(slides)
     assert result[0]["bullets"] == ["a", "b"]
+
+
+def test_sanitize_writes_back_defaulted_edges_for_diagram_missing_edges_key():
+    slides = [{
+        "index": 0, "title": "T", "narration": "N", "bullets": ["a", "b"],
+        "type": "diagram",
+        "visual": {
+            "nodes": [
+                {"id": "A", "label": "A", "x": 50, "y": 30, "shape": "circle"},
+                {"id": "B", "label": "B", "x": 30, "y": 60, "shape": "circle"},
+            ],
+        },
+    }]
+    result = _sanitize_slide_types(slides)
+    assert result[0]["visual"]["edges"] == []
+
+
+def test_sanitize_keeps_diagram_type_when_edges_missing():
+    slides = [{
+        "index": 0, "title": "T", "narration": "N", "bullets": ["a", "b"],
+        "type": "diagram",
+        "visual": {
+            "nodes": [
+                {"id": "A", "label": "A", "x": 50, "y": 30, "shape": "circle"},
+                {"id": "B", "label": "B", "x": 30, "y": 60, "shape": "circle"},
+            ],
+        },
+    }]
+    result = _sanitize_slide_types(slides)
+    assert result[0]["type"] == "diagram"
+
+
+def test_curve_plot_rejects_equal_x_min_and_x_max():
+    with pytest.raises(ValidationError):
+        CurvePlotVisual.model_validate({
+            "x_label": "x", "y_label": "f(x)", "x_min": 5, "x_max": 5,
+            "series": [{"label": "f(x)", "points": [{"x": i, "y": i} for i in range(8)]}],
+        })
+
+
+def test_curve_plot_rejects_inverted_x_domain():
+    with pytest.raises(ValidationError):
+        CurvePlotVisual.model_validate({
+            "x_label": "x", "y_label": "f(x)", "x_min": 5, "x_max": 0,
+            "series": [{"label": "f(x)", "points": [{"x": i, "y": i} for i in range(8)]}],
+        })

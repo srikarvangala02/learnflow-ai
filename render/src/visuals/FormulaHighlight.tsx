@@ -1,5 +1,5 @@
 import { useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { spring, useCurrentFrame, useVideoConfig } from 'remotion'
+import { continueRender, delayRender, spring, useCurrentFrame, useVideoConfig } from 'remotion'
 import katex from 'katex'
 import 'katex/dist/katex.min.css'
 import { FormulaVisual } from '../LearnFlowVideo'
@@ -11,6 +11,10 @@ export function FormulaHighlight({ visual }: { visual: FormulaVisual }) {
   const { fps } = useVideoConfig()
   const containerRef = useRef<HTMLDivElement>(null)
   const [positions, setPositions] = useState<Record<string, Position>>({})
+  const [handle] = useState(() =>
+    delayRender('FormulaHighlight: waiting for KaTeX fonts to load before measuring annotation positions')
+  )
+  const continuedRef = useRef(false)
 
   const html = useMemo(
     () =>
@@ -22,21 +26,41 @@ export function FormulaHighlight({ visual }: { visual: FormulaVisual }) {
   )
 
   useLayoutEffect(() => {
-    const container = containerRef.current
-    if (!container) return
-    const containerBox = container.getBoundingClientRect()
-    const next: Record<string, Position> = {}
-    for (const ann of visual.annotations) {
-      const el = container.querySelector(`#${CSS.escape(ann.id)}`)
-      if (!el) continue
-      const box = el.getBoundingClientRect()
-      next[ann.id] = {
-        x: box.left + box.width / 2 - containerBox.left,
-        y: box.top + box.height - containerBox.top,
+    let cancelled = false
+
+    // Measuring before KaTeX's web fonts finish loading produces bogus
+    // near-origin positions (the browser hasn't laid out the real glyphs
+    // yet), which is invisible in a warm Studio session but reproduces
+    // reliably in a cold headless render. Waiting on document.fonts.ready
+    // guarantees the subsequent getBoundingClientRect() reads reflect the
+    // final, correctly-typeset equation.
+    document.fonts.ready.then(() => {
+      if (cancelled) return
+      const container = containerRef.current
+      if (container) {
+        const containerBox = container.getBoundingClientRect()
+        const next: Record<string, Position> = {}
+        for (const ann of visual.annotations) {
+          const el = container.querySelector(`#${CSS.escape(ann.id)}`)
+          if (!el) continue
+          const box = el.getBoundingClientRect()
+          next[ann.id] = {
+            x: box.left + box.width / 2 - containerBox.left,
+            y: box.top + box.height - containerBox.top,
+          }
+        }
+        setPositions(next)
       }
+      if (!continuedRef.current) {
+        continuedRef.current = true
+        continueRender(handle)
+      }
+    })
+
+    return () => {
+      cancelled = true
     }
-    setPositions(next)
-  }, [html, visual.annotations])
+  }, [html, visual.annotations, handle])
 
   const equationScale = spring({ frame, fps, config: { damping: 14, mass: 0.6 } })
 

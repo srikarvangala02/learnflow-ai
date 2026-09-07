@@ -9,6 +9,7 @@ type Position = { x: number; y: number }
 export function FormulaHighlight({ visual }: { visual: FormulaVisual }) {
   const frame = useCurrentFrame()
   const { fps } = useVideoConfig()
+  const wrapperRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [positions, setPositions] = useState<Record<string, Position>>({})
   const [handle] = useState(() =>
@@ -37,16 +38,26 @@ export function FormulaHighlight({ visual }: { visual: FormulaVisual }) {
     document.fonts.ready.then(() => {
       if (cancelled) return
       const container = containerRef.current
-      if (container) {
-        const containerBox = container.getBoundingClientRect()
+      const wrapper = wrapperRef.current
+      // Measure against wrapperBox, not the equation container's own box.
+      // The SVG overlay below is absolutely positioned relative to the
+      // outer wrapper (its nearest `position: relative` ancestor, since
+      // the SVG is a sibling of the equation div, not nested inside it).
+      // The equation div is centered and narrower than the wrapper, so
+      // using the equation div's own bounding box as the coordinate
+      // origin left every position short by that centering gap — a
+      // constant leftward shift, not the font/scale-timing bug this
+      // effect also guards against.
+      if (container && wrapper) {
+        const wrapperBox = wrapper.getBoundingClientRect()
         const next: Record<string, Position> = {}
         for (const ann of visual.annotations) {
           const el = container.querySelector(`#${CSS.escape(ann.id)}`)
           if (!el) continue
           const box = el.getBoundingClientRect()
           next[ann.id] = {
-            x: box.left + box.width / 2 - containerBox.left,
-            y: box.top + box.height - containerBox.top,
+            x: box.left + box.width / 2 - wrapperBox.left,
+            y: box.top + box.height - wrapperBox.top,
           }
         }
         setPositions(next)
@@ -73,6 +84,7 @@ export function FormulaHighlight({ visual }: { visual: FormulaVisual }) {
 
   return (
     <div
+      ref={wrapperRef}
       style={{
         width: '100%', height: '100%', position: 'relative',
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',

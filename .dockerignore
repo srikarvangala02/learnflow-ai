@@ -1,0 +1,13 @@
+**/node_modules
+**/__pycache__
+**/.venv
+backend/uploads
+backend/tests
+render/out
+frontend
+eval
+docs
+.git
+.claude
+.superpowers
+.worktrees

@@ -177,7 +177,7 @@ def test_generate_script_keeps_valid_visual_slide(monkeypatch):
 
 
 def test_user_template_documents_enabled_visual_types():
-    for keyword in ("curve_plot", "bar_chart", "diagram"):
+    for keyword in ("bar_chart", "diagram"):
         assert keyword in _USER_TEMPLATE
 
 
@@ -187,6 +187,12 @@ def test_user_template_does_not_document_formula():
     # must never see it as an option while this test passes.
     assert '"formula"' not in _USER_TEMPLATE
     assert "\\htmlId" not in _USER_TEMPLATE
+
+
+def test_user_template_does_not_document_curve_plot():
+    # "curve_plot" is temporarily disabled too — same reasoning as formula,
+    # see KNOWN_LIMITATIONS in the README.
+    assert "curve_plot" not in _USER_TEMPLATE
 
 
 def test_user_template_documents_visual_overuse_rule():

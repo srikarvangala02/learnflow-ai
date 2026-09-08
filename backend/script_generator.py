@@ -133,11 +133,12 @@ class FormulaVisual(BaseModel):
         return self
 
 
-# "formula" stays registered here (and FormulaVisual/FormulaHighlight.tsx are
-# left fully in place) even though it's been removed from _USER_TEMPLATE below —
-# see KNOWN_LIMITATIONS in the README. Claude can no longer select it, but the
-# validation path and the sanitizer's fallback-to-bullets behavior for it are
-# kept intact so re-enabling it later is just restoring the prompt text.
+# "formula" and "curve_plot" stay registered here (and FormulaVisual/
+# FormulaHighlight.tsx, CurvePlotVisual/CurvePlot.tsx are left fully in place)
+# even though both are removed from _USER_TEMPLATE below — see
+# KNOWN_LIMITATIONS in the README. Claude can no longer select either, but the
+# validation path and the sanitizer's fallback-to-bullets behavior for both are
+# kept intact so re-enabling either later is just restoring the prompt text.
 _VISUAL_MODELS: dict[str, type[BaseModel]] = {
     "curve_plot": CurvePlotVisual,
     "bar_chart": BarChartVisual,
@@ -226,7 +227,7 @@ Produce a JSON object with this exact schema:
       "title": "<slide title>",
       "narration": "<1-2 short sentences suitable for text-to-speech, speakable in under 12 seconds>",
       "bullets": ["<key point>", ...],
-      "type": "<one of: bullets, curve_plot, bar_chart, diagram>",
+      "type": "<one of: bullets, bar_chart, diagram>",
       "visual": <template-specific object, see below — omit or use {{}} when type is "bullets">
     }}
   ]
@@ -241,9 +242,6 @@ Rules:
 
 Visual types — choose "type" per slide based on what the content actually is:
 - "bullets" (default): conceptual, definitional, or qualitative content. Use this unless the content clearly fits one of the types below.
-- "curve_plot": content describes a function, growth/decay pattern, or distribution over a continuous variable. "visual" shape:
-  {{"x_label": "<axis label>", "y_label": "<axis label>", "x_min": <number>, "x_max": <number>, "series": [{{"label": "<series name>", "points": [{{"x": <number>, "y": <number>}}, ...]}}]}}
-  1 to 3 series, each with 3 to 30 points ordered by ascending x. Supply real sampled (x, y) values — never a symbolic expression or code.
 - "bar_chart": content compares named discrete quantities. "visual" shape:
   {{"y_label": "<axis label>", "bars": [{{"label": "<name>", "value": <number>}}, ...]}}
   2 to 6 bars.

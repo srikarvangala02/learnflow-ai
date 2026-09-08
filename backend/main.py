@@ -1,4 +1,5 @@
 import json
+import os
 import pathlib
 import shlex
 import shutil
@@ -6,10 +7,13 @@ import subprocess
 import sys
 import uuid
 
-from fastapi import BackgroundTasks, FastAPI, File, HTTPException, UploadFile
+from fastapi import BackgroundTasks, FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 
 from eval_runner import evaluate_quiz
 from script_generator import extract_text, generate_script, generate_quiz
@@ -17,9 +21,14 @@ from tts_generator import synthesize_slide_audio
 
 app = FastAPI(title="learnflow-ai")
 
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+allowed_origins = os.environ.get("ALLOWED_ORIGINS", "http://localhost:5173").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=allowed_origins,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -52,7 +61,8 @@ async def upload(file: UploadFile = File(...)) -> dict:
 
 
 @app.post("/generate/{file_id}")
-def generate(file_id: str, background_tasks: BackgroundTasks) -> dict:
+@limiter.limit("10/hour")
+def generate(request: Request, file_id: str, background_tasks: BackgroundTasks) -> dict:
     pdf_path = UPLOADS_DIR / f"{file_id}.pdf"
     if not pdf_path.exists():
         raise HTTPException(status_code=404, detail=f"No uploaded file with id {file_id!r}")
@@ -126,7 +136,8 @@ class EvalRequest(BaseModel):
 
 
 @app.post("/eval")
-def eval_quiz(body: EvalRequest) -> dict:
+@limiter.limit("10/hour")
+def eval_quiz(request: Request, body: EvalRequest) -> dict:
     if body.job_id not in jobs:
         raise HTTPException(status_code=404, detail=f"No job with id {body.job_id!r}")
     job = jobs[body.job_id]

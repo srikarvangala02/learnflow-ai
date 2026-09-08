@@ -176,13 +176,17 @@ def test_generate_script_keeps_valid_visual_slide(monkeypatch):
     assert result["slides"][0]["visual"]["bars"][0]["label"] == "A"
 
 
-def test_user_template_documents_all_visual_types():
-    for keyword in ("curve_plot", "bar_chart", "diagram", "formula"):
+def test_user_template_documents_enabled_visual_types():
+    for keyword in ("curve_plot", "bar_chart", "diagram"):
         assert keyword in _USER_TEMPLATE
 
 
-def test_user_template_documents_htmlid_convention():
-    assert "\\htmlId" in _USER_TEMPLATE
+def test_user_template_does_not_document_formula():
+    # "formula" is temporarily disabled — see KNOWN_LIMITATIONS in the README
+    # and the comment above _VISUAL_MODELS in script_generator.py. Claude
+    # must never see it as an option while this test passes.
+    assert '"formula"' not in _USER_TEMPLATE
+    assert "\\htmlId" not in _USER_TEMPLATE
 
 
 def test_user_template_documents_visual_overuse_rule():

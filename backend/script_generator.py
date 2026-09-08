@@ -133,6 +133,11 @@ class FormulaVisual(BaseModel):
         return self
 
 
+# "formula" stays registered here (and FormulaVisual/FormulaHighlight.tsx are
+# left fully in place) even though it's been removed from _USER_TEMPLATE below —
+# see KNOWN_LIMITATIONS in the README. Claude can no longer select it, but the
+# validation path and the sanitizer's fallback-to-bullets behavior for it are
+# kept intact so re-enabling it later is just restoring the prompt text.
 _VISUAL_MODELS: dict[str, type[BaseModel]] = {
     "curve_plot": CurvePlotVisual,
     "bar_chart": BarChartVisual,
@@ -221,7 +226,7 @@ Produce a JSON object with this exact schema:
       "title": "<slide title>",
       "narration": "<1-2 short sentences suitable for text-to-speech, speakable in under 12 seconds>",
       "bullets": ["<key point>", ...],
-      "type": "<one of: bullets, curve_plot, bar_chart, diagram, formula>",
+      "type": "<one of: bullets, curve_plot, bar_chart, diagram>",
       "visual": <template-specific object, see below — omit or use {{}} when type is "bullets">
     }}
   ]
@@ -245,9 +250,6 @@ Visual types — choose "type" per slide based on what the content actually is:
 - "diagram": content describes spatial, relational, or set structure between named entities (including plain coordinate points, using shape "point"). "visual" shape:
   {{"nodes": [{{"id": "<short id>", "label": "<display label>", "x": <0-100>, "y": <0-100>, "shape": "<circle, rect, or point>"}}, ...], "edges": [{{"from": "<node id>", "to": "<node id>", "label": "<optional edge label>"}}, ...]}}
   2 to 6 nodes, 0 to 5 edges. x and y are percentages of the canvas (0-100). Every edge's "from" and "to" must match a node "id".
-- "formula": the slide centers on one named equation worth breaking into parts. "visual" shape:
-  {{"latex": "<LaTeX with each annotated part wrapped in \\htmlId{{<id>}}{{<expression>}}>", "annotations": [{{"id": "<matching id>", "label": "<what this part means>"}}, ...]}}
-  1 to 4 annotations. Every annotation "id" must appear as a \\htmlId{{...}} wrapper somewhere in "latex".
 
 Across the whole deck, no more than half the slides should use a non-"bullets" type — visuals should earn their place on a slide, not be used for novelty.\
 """

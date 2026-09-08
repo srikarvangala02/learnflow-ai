@@ -1,10 +1,12 @@
 import { cn } from '@/lib/utils'
 import type { Question, EvalResult, EvalQuestionResult, FocusArea } from '@/lib/api'
+import { VideoPlayer } from './VideoPlayer'
 
 interface Props {
   questions: Question[]
   userAnswers: string[]
   evalResult: EvalResult
+  renderJobId: string | null
 }
 
 function scoreColor(score: number, total: number) {
@@ -82,7 +84,7 @@ function QuestionRow({
   )
 }
 
-export function ResultsStep({ questions, userAnswers, evalResult }: Props) {
+export function ResultsStep({ questions, userAnswers, evalResult, renderJobId }: Props) {
   const userScore = questions.reduce(
     (acc, q, i) => acc + (userAnswers[i] === q.answer ? 1 : 0),
     0,
@@ -95,6 +97,9 @@ export function ResultsStep({ questions, userAnswers, evalResult }: Props) {
         <p className="text-xs uppercase tracking-widest text-text-secondary mb-2">Complete</p>
         <h2 className="text-2xl font-semibold text-text-primary">Results</h2>
       </div>
+
+      {/* Video */}
+      <VideoPlayer renderJobId={renderJobId} />
 
       {/* Score cards */}
       <div className="flex gap-4 flex-col sm:flex-row">

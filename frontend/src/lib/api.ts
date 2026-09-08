@@ -69,6 +69,19 @@ export function getQuiz(jobId: string): Promise<QuizResponse> {
   return request(`/quiz/${jobId}`)
 }
 
+export function startRender(jobId: string): Promise<{ job_id: string }> {
+  return request(`/render/${jobId}`, { method: 'POST' })
+}
+
+export function pollRenderJob(renderJobId: string): Promise<Job> {
+  return request(`/job/${renderJobId}`)
+}
+
+export function getRenderVideoUrl(renderJobId: string): string {
+  const base = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000'
+  return `${base}/render/${renderJobId}/video`
+}
+
 export function runEval(jobId: string, questions: Question[], userAnswers: string[]): Promise<EvalResult> {
   return request('/eval', {
     method: 'POST',

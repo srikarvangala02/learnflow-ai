@@ -23,8 +23,8 @@ class CurveSeries(BaseModel):
     @field_validator("points")
     @classmethod
     def _check_point_count(cls, v: list[CurvePoint]) -> list[CurvePoint]:
-        if not (8 <= len(v) <= 30):
-            raise ValueError("points must have between 8 and 30 entries")
+        if not (3 <= len(v) <= 30):
+            raise ValueError("points must have between 3 and 30 entries")
         return v
 
 
@@ -243,7 +243,7 @@ Visual types — choose "type" per slide based on what the content actually is:
 - "bullets" (default): conceptual, definitional, or qualitative content. Use this unless the content clearly fits one of the types below.
 - "curve_plot": content describes a function, growth/decay pattern, or distribution over a continuous variable. "visual" shape:
   {{"x_label": "<axis label>", "y_label": "<axis label>", "x_min": <number>, "x_max": <number>, "series": [{{"label": "<series name>", "points": [{{"x": <number>, "y": <number>}}, ...]}}]}}
-  1 to 3 series, each with 8 to 30 points ordered by ascending x. Supply real sampled (x, y) values — never a symbolic expression or code.
+  1 to 3 series, each with 3 to 30 points ordered by ascending x. Supply real sampled (x, y) values — never a symbolic expression or code.
 - "bar_chart": content compares named discrete quantities. "visual" shape:
   {{"y_label": "<axis label>", "bars": [{{"label": "<name>", "value": <number>}}, ...]}}
   2 to 6 bars.

@@ -21,8 +21,15 @@ def test_curve_plot_rejects_too_few_points():
     with pytest.raises(ValidationError):
         CurvePlotVisual.model_validate({
             "x_label": "x", "y_label": "f(x)", "x_min": -5, "x_max": 5,
-            "series": [{"label": "f(x)", "points": [{"x": 0, "y": 0}]}],
+            "series": [{"label": "f(x)", "points": [{"x": 0, "y": 0}, {"x": 1, "y": 1}]}],
         })
+
+
+def test_curve_plot_accepts_minimum_three_points():
+    CurvePlotVisual.model_validate({
+        "x_label": "x", "y_label": "f(x)", "x_min": 0, "x_max": 2,
+        "series": [{"label": "small worked example", "points": [{"x": 0, "y": 0}, {"x": 1, "y": 1}, {"x": 2, "y": 4}]}],
+    })
 
 
 def test_curve_plot_rejects_too_many_series():

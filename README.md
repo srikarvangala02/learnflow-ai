@@ -72,3 +72,7 @@ npx remotion studio src/index.ts
 cd eval
 python eval.py
 ```
+
+## Known Limitations
+
+- **Formula visual type is temporarily disabled.** Slides now render as one of `bullets`, `curve_plot`, `bar_chart`, or `diagram` — the fifth planned template, `formula` (a typeset equation with animated leader-lines annotating each part), is implemented end-to-end (schema, validation, and the Remotion component) but disabled at the prompt level after three separate fix attempts still left its annotation labels mispositioned in real renders. Content that would have used `formula` now falls back to `bullets`. See the comment above `_VISUAL_MODELS` in `backend/script_generator.py` for how to re-enable it once the positioning bug is actually fixed.

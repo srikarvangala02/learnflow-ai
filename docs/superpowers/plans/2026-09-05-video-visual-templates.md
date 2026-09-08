@@ -380,7 +380,7 @@ def _sanitize_slide_types(slides: list[dict]) -> list[dict]:
 - [ ] **Step 4: Run tests to verify they pass**
 
 Run: `cd backend && pytest tests/test_visual_validation.py -v`
-Expected: PASS (17 tests total)
+Expected: PASS (16 tests total)
 
 - [ ] **Step 5: Commit**
 
